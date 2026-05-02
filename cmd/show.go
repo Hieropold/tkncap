@@ -128,10 +128,12 @@ func runShow(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		q := p.Fetch(ctx, acc)
-		slog.Debug("show: quota fetched",
-			"provider", acc.Provider, "account", acc.Name, "status", q.Status)
-		quotas = append(quotas, q)
+		qs := p.Fetch(ctx, acc)
+		for _, q := range qs {
+			slog.Debug("show: quota fetched",
+				"provider", acc.Provider, "account", acc.Name, "status", q.Status, "name", q.Name)
+		}
+		quotas = append(quotas, qs...)
 	}
 
 	var renderer output.Renderer

@@ -68,6 +68,7 @@ const (
  */
 type Quota struct {
 	Account  account.Account
+	Name     string     // e.g. "5-hour" or "7-day" (optional, for multiple limits per account)
 	Status   Status
 	Used     *int64     // nil when unknown
 	Limit    *int64     // nil when unknown
@@ -82,8 +83,7 @@ type Quota struct {
  * Interface that each quota-provider implementation must satisfy. Kind returns
  * the provider type so the registry can route accounts to the correct
  * implementation. Fetch performs the quota lookup for a single account and
- * returns a populated Quota (never returns error; errors are encoded in
- * Quota.Status and Quota.Message to allow partial results).
+ * returns a slice of Quota (to support multiple limits like 5-hour and 7-day).
  * <purpose-end>
  *
  * <inputs-start>
@@ -100,7 +100,7 @@ type Quota struct {
  */
 type Provider interface {
 	Kind() account.Provider
-	Fetch(ctx context.Context, a account.Account) Quota
+	Fetch(ctx context.Context, a account.Account) []Quota
 }
 
 // registry holds the mapping from account.Provider → Provider implementation.

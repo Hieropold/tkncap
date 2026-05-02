@@ -40,10 +40,12 @@ import (
 type quotaJSON struct {
 	Provider string     `json:"provider"`
 	Account  string     `json:"account"`
+	Name     string     `json:"name,omitempty"`
 	Status   string     `json:"status"`
 	Used     *int64     `json:"used"`
 	Limit    *int64     `json:"limit"`
 	ResetsAt *time.Time `json:"resets_at"`
+	ResetsIn *float64   `json:"resets_in_hours,omitempty"`
 	Message  string     `json:"message,omitempty"`
 }
 
@@ -76,15 +78,27 @@ type JSONRenderer struct{}
 func (j *JSONRenderer) Render(w io.Writer, quotas []provider.Quota) error {
 	slog.Debug("json: rendering quota JSON", "records", len(quotas))
 
+	now := time.Now()
 	records := make([]quotaJSON, 0, len(quotas))
 	for _, q := range quotas {
+		var resetsIn *float64
+		if q.ResetsAt != nil {
+			hours := q.ResetsAt.Sub(now).Hours()
+			if hours < 0 {
+				hours = 0
+			}
+			resetsIn = &hours
+		}
+
 		records = append(records, quotaJSON{
 			Provider: string(q.Account.Provider),
 			Account:  q.Account.Name,
+			Name:     q.Name,
 			Status:   string(q.Status),
 			Used:     q.Used,
 			Limit:    q.Limit,
 			ResetsAt: q.ResetsAt,
+			ResetsIn: resetsIn,
 			Message:  q.Message,
 		})
 	}

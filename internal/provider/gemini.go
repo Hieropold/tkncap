@@ -86,22 +86,22 @@ func (g *GeminiProvider) Kind() account.Provider {
  * - Logs the fetch attempt at debug level.
  * <side-effects-end>
  */
-func (g *GeminiProvider) Fetch(ctx context.Context, a account.Account) Quota {
+func (g *GeminiProvider) Fetch(ctx context.Context, a account.Account) []Quota {
 	slog.Debug("gemini: fetching quota (stub)", "account", a.Name)
 
 	if a.Fields["API_KEY"] == "" {
 		slog.Debug("gemini: account missing API_KEY field", "account", a.Name)
-		return Quota{
+		return []Quota{{
 			Account: a,
 			Status:  StatusMisconfigured,
 			Message: "missing required field TKNCAP_GEMINI_<ACCOUNT>_API_KEY",
-		}
+		}}
 	}
 
 	slog.Debug("gemini: stub — returning unimplemented", "account", a.Name)
-	return Quota{
+	return []Quota{{
 		Account: a,
 		Status:  StatusUnimplemented,
 		Message: "Gemini quota API integration not yet implemented",
-	}
+	}}
 }

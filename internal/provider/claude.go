@@ -81,6 +81,10 @@ type anthropicUsageResponse struct {
 		Utilization float64 `json:"utilization"`
 		ResetsAt    string  `json:"resets_at"`
 	} `json:"five_hour"`
+	SevenDay struct {
+		Utilization float64 `json:"utilization"`
+		ResetsAt    string  `json:"resets_at"`
+	} `json:"seven_day"`
 }
 
 /**
@@ -99,7 +103,7 @@ type anthropicUsageResponse struct {
  * <inputs-end>
  *
  * <outputs-start>
- * - Quota containing the fetch status, usage details, and any error message.
+ * - []Quota containing the fetch status, usage details, and any error message.
  * <outputs-end>
  *
  * <side-effects-start>
@@ -108,17 +112,17 @@ type anthropicUsageResponse struct {
  * - Logs debugging information via slog.
  * <side-effects-end>
  */
-func (c *ClaudeProvider) Fetch(ctx context.Context, a account.Account) Quota {
+func (c *ClaudeProvider) Fetch(ctx context.Context, a account.Account) []Quota {
 	slog.Debug("claude: fetching quota", "account", a.Name)
 
 	credPath := a.Fields["CREDENTIALS_PATH"]
 	if credPath == "" {
 		slog.Debug("claude: account missing CREDENTIALS_PATH field", "account", a.Name)
-		return Quota{
+		return []Quota{{
 			Account: a,
 			Status:  StatusMisconfigured,
 			Message: "missing required field TKNCAP_CLAUDE_<ACCOUNT>_CREDENTIALS_PATH",
-		}
+		}}
 	}
 
 	// 1. Read credentials file
@@ -126,42 +130,42 @@ func (c *ClaudeProvider) Fetch(ctx context.Context, a account.Account) Quota {
 	fileData, err := os.ReadFile(credPath)
 	if err != nil {
 		slog.Debug("claude: failed to read credentials file", "account", a.Name, "error", err)
-		return Quota{
+		return []Quota{{
 			Account: a,
 			Status:  StatusError,
 			Message: fmt.Sprintf("failed to read credentials file: %v", err),
-		}
+		}}
 	}
 
 	var creds claudeCredentials
 	if err := json.Unmarshal(fileData, &creds); err != nil {
 		slog.Debug("claude: failed to parse credentials JSON", "account", a.Name, "error", err)
-		return Quota{
+		return []Quota{{
 			Account: a,
 			Status:  StatusError,
 			Message: fmt.Sprintf("failed to parse credentials JSON: %v", err),
-		}
+		}}
 	}
 
 	token := creds.ClaudeAiOauth.AccessToken
 	if token == "" {
 		slog.Debug("claude: access token not found in credentials", "account", a.Name)
-		return Quota{
+		return []Quota{{
 			Account: a,
 			Status:  StatusError,
 			Message: "access token not found in credentials file",
-		}
+		}}
 	}
 
 	// 2. Fetch usage from Anthropic API
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.anthropic.com/api/oauth/usage", nil)
 	if err != nil {
 		slog.Debug("claude: failed to create request", "account", a.Name, "error", err)
-		return Quota{
+		return []Quota{{
 			Account: a,
 			Status:  StatusError,
 			Message: fmt.Sprintf("failed to create HTTP request: %v", err),
-		}
+		}}
 	}
 
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -173,53 +177,64 @@ func (c *ClaudeProvider) Fetch(ctx context.Context, a account.Account) Quota {
 	resp, err := client.Do(req)
 	if err != nil {
 		slog.Debug("claude: API request failed", "account", a.Name, "error", err)
-		return Quota{
+		return []Quota{{
 			Account: a,
 			Status:  StatusError,
 			Message: fmt.Sprintf("API request failed: %v", err),
-		}
+		}}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		slog.Debug("claude: API returned non-OK status", "account", a.Name, "status", resp.StatusCode)
-		return Quota{
+		return []Quota{{
 			Account: a,
 			Status:  StatusError,
 			Message: fmt.Sprintf("API returned status %d", resp.StatusCode),
-		}
+		}}
 	}
 
 	var usage anthropicUsageResponse
 	if err := json.NewDecoder(resp.Body).Decode(&usage); err != nil {
 		slog.Debug("claude: failed to decode API response", "account", a.Name, "error", err)
-		return Quota{
+		return []Quota{{
 			Account: a,
 			Status:  StatusError,
 			Message: fmt.Sprintf("failed to decode API response: %v", err),
-		}
+		}}
 	}
-
-	slog.Debug("claude: successfully fetched quota", "account", a.Name,
-		"utilization", usage.FiveHour.Utilization, "resets_at", usage.FiveHour.ResetsAt)
 
 	var limit int64 = 100
-	used := int64(usage.FiveHour.Utilization)
+	var results []Quota
 
-	var resetsAtPtr *time.Time
-	if usage.FiveHour.ResetsAt != "" {
-		if parsedTime, err := time.Parse(time.RFC3339, usage.FiveHour.ResetsAt); err == nil {
-			resetsAtPtr = &parsedTime
-		} else {
-			slog.Debug("claude: failed to parse resets_at timestamp", "account", a.Name, "error", err)
+	// Helper to safely parse and append
+	appendQuota := func(name string, util float64, resetsAtStr string) {
+		used := int64(util)
+		var resetsAtPtr *time.Time
+		if resetsAtStr != "" {
+			if parsedTime, err := time.Parse(time.RFC3339, resetsAtStr); err == nil {
+				resetsAtPtr = &parsedTime
+			} else {
+				slog.Debug("claude: failed to parse resets_at timestamp", "account", a.Name, "name", name, "error", err)
+			}
 		}
+		results = append(results, Quota{
+			Account:  a,
+			Name:     name,
+			Status:   StatusOK,
+			Used:     &used,
+			Limit:    &limit,
+			ResetsAt: resetsAtPtr,
+		})
 	}
 
-	return Quota{
-		Account:  a,
-		Status:   StatusOK,
-		Used:     &used,
-		Limit:    &limit,
-		ResetsAt: resetsAtPtr,
-	}
+	// 5-hour window
+	slog.Debug("claude: successfully fetched 5-hour quota", "account", a.Name, "utilization", usage.FiveHour.Utilization, "resets_at", usage.FiveHour.ResetsAt)
+	appendQuota("5-hour", usage.FiveHour.Utilization, usage.FiveHour.ResetsAt)
+
+	// 7-day window
+	slog.Debug("claude: successfully fetched 7-day quota", "account", a.Name, "utilization", usage.SevenDay.Utilization, "resets_at", usage.SevenDay.ResetsAt)
+	appendQuota("7-day", usage.SevenDay.Utilization, usage.SevenDay.ResetsAt)
+
+	return results
 }

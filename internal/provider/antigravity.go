@@ -86,22 +86,22 @@ func (a *AntigravityProvider) Kind() account.Provider {
  * - Logs the fetch attempt at debug level.
  * <side-effects-end>
  */
-func (ag *AntigravityProvider) Fetch(ctx context.Context, a account.Account) Quota {
+func (ag *AntigravityProvider) Fetch(ctx context.Context, a account.Account) []Quota {
 	slog.Debug("antigravity: fetching quota (stub)", "account", a.Name)
 
 	if a.Fields["TOKEN"] == "" {
 		slog.Debug("antigravity: account missing TOKEN field", "account", a.Name)
-		return Quota{
+		return []Quota{{
 			Account: a,
 			Status:  StatusMisconfigured,
 			Message: "missing required field TKNCAP_ANTIGRAVITY_<ACCOUNT>_TOKEN",
-		}
+		}}
 	}
 
 	slog.Debug("antigravity: stub — returning unimplemented", "account", a.Name)
-	return Quota{
+	return []Quota{{
 		Account: a,
 		Status:  StatusUnimplemented,
 		Message: "Antigravity quota API integration not yet implemented",
-	}
+	}}
 }

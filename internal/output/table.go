@@ -31,6 +31,7 @@ import (
 	"io"
 	"log/slog"
 	"text/tabwriter"
+	"time"
 
 	"github.com/hieropold/tkncap/internal/provider"
 )
@@ -67,10 +68,11 @@ func (t *TableRenderer) Render(w io.Writer, quotas []provider.Quota) error {
 	tw := tabwriter.NewWriter(w, 1, 8, 2, ' ', 0)
 
 	// Header row.
-	if _, err := fmt.Fprintln(tw, "PROVIDER\tACCOUNT\tSTATUS\tUSED\tLIMIT\tRESETS_AT"); err != nil {
+	if _, err := fmt.Fprintln(tw, "PROVIDER\tACCOUNT\tWINDOW\tSTATUS\tUSED\tLIMIT\tRESETS_AT\tRESETS_IN"); err != nil {
 		return fmt.Errorf("table: write header: %w", err)
 	}
 
+	now := time.Now()
 	for _, q := range quotas {
 		used := "-"
 		if q.Used != nil {
@@ -81,23 +83,37 @@ func (t *TableRenderer) Render(w io.Writer, quotas []provider.Quota) error {
 			limit = fmt.Sprintf("%d", *q.Limit)
 		}
 		resetsAt := "-"
+		resetsIn := "-"
 		if q.ResetsAt != nil {
 			resetsAt = q.ResetsAt.Format("2006-01-02T15:04:05Z07:00")
+			hours := q.ResetsAt.Sub(now).Hours()
+			if hours < 0 {
+				hours = 0
+			}
+			resetsIn = fmt.Sprintf("%.1fh", hours)
+		}
+		
+		window := q.Name
+		if window == "" {
+			window = "-"
 		}
 
 		slog.Debug("table: rendering row",
 			"provider", q.Account.Provider,
 			"account", q.Account.Name,
+			"window", window,
 			"status", q.Status,
 		)
 
-		row := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s",
+		row := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s",
 			q.Account.Provider,
 			q.Account.Name,
+			window,
 			q.Status,
 			used,
 			limit,
 			resetsAt,
+			resetsIn,
 		)
 		if _, err := fmt.Fprintln(tw, row); err != nil {
 			return fmt.Errorf("table: write row for %s/%s: %w", q.Account.Provider, q.Account.Name, err)

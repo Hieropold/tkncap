@@ -2,7 +2,7 @@
 
 ## Overview
 
-`tkncap` is a CLI tool that reads token quota information for user accounts across multiple AI provider services: Claude Code, Gemini, and Antigravity. Each service call is isolated behind a `Provider` interface so implementations can be added independently without changing the command layer.
+`tkncap` is a CLI tool that reads token quota information for user accounts across multiple AI provider services: Claude Code and Gemini. Each service call is isolated behind a `Provider` interface so implementations can be added independently without changing the command layer.
 
 ## Repository Layout
 
@@ -20,8 +20,7 @@ tkncap/
     ├── provider/
     │   ├── provider.go           # Provider interface, Quota type, registry
     │   ├── claude.go             # ClaudeProvider (stub)
-    │   ├── gemini.go             # GeminiProvider (stub)
-    │   └── antigravity.go        # AntigravityProvider (stub)
+    │   └── gemini.go             # GeminiProvider (stub)
     ├── logging/
     │   └── logging.go            # slog initialisation from TKNCAP_LOG_LEVEL
     └── output/
@@ -58,7 +57,7 @@ All accounts are configured via environment variables. No config file is used. T
 TKNCAP_<PROVIDER>_<ACCOUNT>_<FIELD>=<value>
 ```
 
-- **PROVIDER**: `CLAUDE`, `GEMINI`, or `ANTIGRAVITY` (case-sensitive uppercase).
+- **PROVIDER**: `CLAUDE` or `GEMINI` (case-sensitive uppercase).
 - **ACCOUNT**: A user-chosen label (uppercase, single token with no underscores), e.g. `WORK`, `PERSONAL`, `MAIN`.
 - **FIELD**: A provider-specific key, e.g. `CREDENTIALS_PATH`, `API_KEY`, `TOKEN`.
 
@@ -68,7 +67,6 @@ Multiple accounts of the same provider are supported by using different ACCOUNT 
 TKNCAP_CLAUDE_WORK_CREDENTIALS_PATH=/home/user/.claude/.credentials.json
 TKNCAP_CLAUDE_PERSONAL_CREDENTIALS_PATH=/home/user/.claude-personal/.credentials.json
 TKNCAP_GEMINI_MAIN_API_KEY=AIzaFake
-TKNCAP_ANTIGRAVITY_DEFAULT_TOKEN=tok123
 ```
 
 ## Provider Interface

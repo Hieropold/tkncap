@@ -11,7 +11,7 @@
  *   5. Renders all Quota records to os.Stdout.
  *
  * Provider implementations are registered via init() in their respective
- * files (claude.go, gemini.go, antigravity.go). This file imports the
+ * files (claude.go, gemini.go). This file imports the
  * provider package with a blank import to trigger those init() calls.
  * <purpose-end>
  *
@@ -108,7 +108,6 @@ func runShow(cmd *cobra.Command, args []string) error {
 		fmt.Fprintln(os.Stderr, "Examples:")
 		fmt.Fprintln(os.Stderr, "  TKNCAP_CLAUDE_WORK_CREDENTIALS_PATH=~/.claude/.credentials.json")
 		fmt.Fprintln(os.Stderr, "  TKNCAP_GEMINI_MAIN_API_KEY=AIza...")
-		fmt.Fprintln(os.Stderr, "  TKNCAP_ANTIGRAVITY_DEFAULT_TOKEN=tok...")
 		return nil
 	}
 

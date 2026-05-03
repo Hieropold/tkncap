@@ -58,6 +58,7 @@ func TestDiscover(t *testing.T) {
 				}},
 			},
 		},
+
 		{
 			name: "two claude accounts accumulate separately",
 			env: []string{
@@ -71,9 +72,8 @@ func TestDiscover(t *testing.T) {
 			env: []string{
 				"TKNCAP_CLAUDE_WORK_CREDENTIALS_PATH=/some/path",
 				"TKNCAP_GEMINI_MAIN_API_KEY=AIzaFake",
-				"TKNCAP_ANTIGRAVITY_DEFAULT_TOKEN=tok123",
 			},
-			wantLen: 3,
+			wantLen: 2,
 		},
 		{
 			name: "multiple fields for same account merged into one Account",

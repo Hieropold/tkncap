@@ -66,7 +66,7 @@ Use `TKNCAP_LOG_LEVEL=debug` (or `--log-level debug`) to enable verbose tracing.
 
 ## MCP Docs Server
 
-Always use Context7 when you need code generation, setup or configuration steps, or library/API documentation. This means you should automatically use the Context7 MCP tools to resolve the library ID and get library docs **without the user having to explicitly ask**. This applies to all libraries and frameworks used in this project: `cobra`, `slog`, future provider SDKs (Anthropic, Google Gemini, Antigravity), and any new dependency.
+Always use Context7 when you need code generation, setup or configuration steps, or library/API documentation. This means you should automatically use the Context7 MCP tools to resolve the library ID and get library docs **without the user having to explicitly ask**. This applies to all libraries and frameworks used in this project: `cobra`, `slog`, future provider SDKs (Anthropic, Google Gemini), and any new dependency.
 
 Workflow:
 1. Call `mcp__plugin_context7_context7__resolve-library-id` to get the library ID.
@@ -90,7 +90,6 @@ github.com/hieropold/tkncap
 |-------------|----------------------|-----------------------|----------------------------------------------------|
 | claude      | `ProviderClaude`      | `CREDENTIALS_PATH`    | `TKNCAP_CLAUDE_WORK_CREDENTIALS_PATH=~/.claude/...` |
 | gemini      | `ProviderGemini`      | `API_KEY`             | `TKNCAP_GEMINI_MAIN_API_KEY=AIza...`                |
-| antigravity | `ProviderAntigravity` | `TOKEN`               | `TKNCAP_ANTIGRAVITY_DEFAULT_TOKEN=tok...`           |
 
 ### Adding a New Provider
 

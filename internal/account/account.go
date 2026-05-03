@@ -8,7 +8,7 @@
  *
  * The env-var convention is:
  *   TKNCAP_<PROVIDER>_<ACCOUNT>_<FIELD>=<value>
- * where PROVIDER ∈ {CLAUDE, GEMINI, ANTIGRAVITY}, ACCOUNT is a user label
+ * where PROVIDER ∈ {CLAUDE, GEMINI}, ACCOUNT is a user label
  * (single underscore-free token), and FIELD is a provider-specific key.
  *
  * Variables whose PROVIDER segment is not one of the known providers are
@@ -42,15 +42,13 @@ type Provider string
 
 const (
 	ProviderClaude      Provider = "claude"
-	ProviderGemini      Provider = "gemini"
-	ProviderAntigravity Provider = "antigravity"
+	ProviderGemini Provider = "gemini"
 )
 
 // knownProviders maps the uppercase env-var segment to the canonical Provider value.
 var knownProviders = map[string]Provider{
 	"CLAUDE":      ProviderClaude,
-	"GEMINI":      ProviderGemini,
-	"ANTIGRAVITY": ProviderAntigravity,
+	"GEMINI": ProviderGemini,
 }
 
 /**

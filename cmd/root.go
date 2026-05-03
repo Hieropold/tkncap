@@ -48,13 +48,13 @@ var logLevelFlag string
 
 var rootCmd = &cobra.Command{
 	Use:   "tkncap",
-	Short: "View current token quota for Claude Code, Gemini, and Antigravity accounts",
+	Short: "View current token quota for Claude Code and Gemini accounts",
 	Long: `tkncap reports the current token quota and usage for all configured
 provider accounts. Accounts are configured via environment variables:
 
   TKNCAP_<PROVIDER>_<ACCOUNT>_<FIELD>=<value>
 
-Supported providers: claude, gemini, antigravity
+Supported providers: claude, gemini
 
 Example:
   TKNCAP_CLAUDE_WORK_CREDENTIALS_PATH=~/.claude/.credentials.json \

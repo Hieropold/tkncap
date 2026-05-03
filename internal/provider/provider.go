@@ -111,8 +111,8 @@ var registry = map[account.Provider]Provider{}
  *
  * <purpose-start>
  * Adds a Provider implementation to the package-level registry. Intended to be
- * called from the init() function of each provider package (claude, gemini,
- * antigravity). Panics if a provider for the same Kind is registered twice to
+ * called from the init() function of each provider package (claude, gemini).
+ * Panics if a provider for the same Kind is registered twice to
  * catch accidental double-registration at startup.
  * <purpose-end>
  *

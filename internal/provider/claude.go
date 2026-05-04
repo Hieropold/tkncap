@@ -85,6 +85,13 @@ type anthropicUsageResponse struct {
 		Utilization float64 `json:"utilization"`
 		ResetsAt    string  `json:"resets_at"`
 	} `json:"seven_day"`
+	ExtraUsage struct {
+		IsEnabled    bool    `json:"is_enabled"`
+		MonthlyLimit int64   `json:"monthly_limit"`
+		UsedCredits  float64 `json:"used_credits"`
+		Utilization  float64 `json:"utilization"`
+		Currency     string  `json:"currency"`
+	} `json:"extra_usage"`
 }
 
 /**
@@ -235,6 +242,20 @@ func (c *ClaudeProvider) Fetch(ctx context.Context, a account.Account) []Quota {
 	// 7-day window
 	slog.Debug("claude: successfully fetched 7-day quota", "account", a.Name, "utilization", usage.SevenDay.Utilization, "resets_at", usage.SevenDay.ResetsAt)
 	appendQuota("7-day", usage.SevenDay.Utilization, usage.SevenDay.ResetsAt)
+
+	// Extra window
+	if usage.ExtraUsage.IsEnabled {
+		slog.Debug("claude: successfully fetched extra quota", "account", a.Name, "used", usage.ExtraUsage.UsedCredits, "limit", usage.ExtraUsage.MonthlyLimit)
+		used := int64(usage.ExtraUsage.UsedCredits)
+		extraLimit := usage.ExtraUsage.MonthlyLimit
+		results = append(results, Quota{
+			Account: a,
+			Name:    "extra",
+			Status:  StatusOK,
+			Used:    &used,
+			Limit:   &extraLimit,
+		})
+	}
 
 	return results
 }

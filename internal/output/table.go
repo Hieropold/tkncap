@@ -68,7 +68,7 @@ func (t *TableRenderer) Render(w io.Writer, quotas []provider.Quota) error {
 	tw := tabwriter.NewWriter(w, 1, 8, 2, ' ', 0)
 
 	// Header row.
-	if _, err := fmt.Fprintln(tw, "PROVIDER\tACCOUNT\tWINDOW\tSTATUS\tUSED\tLIMIT\tRESETS_AT\tRESETS_IN"); err != nil {
+	if _, err := fmt.Fprintln(tw, "PROVIDER\tACCOUNT\tWINDOW\tSTATUS\tUSED\tLIMIT\tRESETS_AT\tRESETS_IN\tMESSAGE"); err != nil {
 		return fmt.Errorf("table: write header: %w", err)
 	}
 
@@ -105,7 +105,7 @@ func (t *TableRenderer) Render(w io.Writer, quotas []provider.Quota) error {
 			"status", q.Status,
 		)
 
-		row := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s",
+		row := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s",
 			q.Account.Provider,
 			q.Account.Name,
 			window,
@@ -114,6 +114,7 @@ func (t *TableRenderer) Render(w io.Writer, quotas []provider.Quota) error {
 			limit,
 			resetsAt,
 			resetsIn,
+			q.Message,
 		)
 		if _, err := fmt.Fprintln(tw, row); err != nil {
 			return fmt.Errorf("table: write row for %s/%s: %w", q.Account.Provider, q.Account.Name, err)

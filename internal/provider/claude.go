@@ -194,10 +194,19 @@ func (c *ClaudeProvider) Fetch(ctx context.Context, a account.Account) []Quota {
 
 	if resp.StatusCode != http.StatusOK {
 		slog.Debug("claude: API returned non-OK status", "account", a.Name, "status", resp.StatusCode)
+		msg := fmt.Sprintf("API returned status %d", resp.StatusCode)
+		switch resp.StatusCode {
+		case http.StatusUnauthorized:
+			msg = "API returned 401 Unauthorized: check if your access token is valid"
+		case http.StatusForbidden:
+			msg = "API returned 403 Forbidden: you may not have permission to access this endpoint"
+		case http.StatusTooManyRequests:
+			msg = "API returned 429 Too Many Requests: you are being rate limited"
+		}
 		return []Quota{{
 			Account: a,
 			Status:  StatusError,
-			Message: fmt.Sprintf("API returned status %d", resp.StatusCode),
+			Message: msg,
 		}}
 	}
 

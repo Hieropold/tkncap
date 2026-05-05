@@ -73,3 +73,15 @@ export TKNCAP_CLAUDE_PERSONAL_CREDENTIALS_PATH=~/.claude-personal/.credentials.j
 ```
 
 Once exported, running `tkncap show` will automatically discover and display the token capacity for both configured accounts.
+
+### Setting up Gemini accounts
+
+For Gemini, the required `<FIELD>` is `API_KEY`. You can obtain an API key from the [Google AI Studio](https://aistudio.google.com/).
+
+Example configuration for a Gemini account:
+
+```bash
+export TKNCAP_GEMINI_MAIN_API_KEY=AIza...
+```
+
+Once exported, running `tkncap show` will automatically discover and display the Requests Per Minute (RPM), Tokens Per Minute (TPM), and Requests Per Day (RPD) quotas for your Gemini account.

@@ -29,6 +29,16 @@ go install .
 The environment variable naming convention is:
 `TKNCAP_<PROVIDER>_<ACCOUNT>_<FIELD>=<value>`
 
+### Logging
+
+By default, `tkncap` does not output any logs. To enable logging, set the `TKNCAP_LOG_LEVEL` environment variable to a desired log level (`debug`, `info`, `warn`, `error`). No logs will be printed if the variable is empty or unset.
+
+```bash
+export TKNCAP_LOG_LEVEL=debug
+```
+
+Logs are output to standard error (`stderr`) to prevent interference with standard output (`stdout`) formats like JSON or tables.
+
 ### Setting up multiple Claude accounts
 
 The process of managing multiple Claude accounts involves two parts:

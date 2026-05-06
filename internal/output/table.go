@@ -28,9 +28,11 @@
 package output
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log/slog"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -44,12 +46,11 @@ type TableRenderer struct{}
  * Render
  *
  * <purpose-start>
- * Formats each Quota as a table row with columns: PROVIDER, ACCOUNT, STATUS,
- * USED, LIMIT, RESETS_AT. Nil pointer fields become "-". Uses text/tabwriter
- * with tab-padded alignment and a minimum column width of 1 and tab width of 8.
- * Applies ANSI color sequences to colorize lines based on quota utilization.
- * Uses tabwriter.StripEscape to ensure that ANSI escape codes wrapped in
- * \xff don't interfere with column alignment.
+ * Formats each Quota as a table row with columns: PROVIDER, ACCOUNT, WINDOW,
+ * STATUS, USED, LIMIT, RESETS_AT, RESETS_IN, MESSAGE. Nil pointer fields 
+ * become "-". Uses text/tabwriter to align columns in an intermediate buffer 
+ * before applying ANSI color sequences to entire rows based on quota 
+ * utilization. This ensures perfect alignment regardless of escape sequences.
  * <purpose-end>
  *
  * <inputs-start>
@@ -69,7 +70,10 @@ type TableRenderer struct{}
 func (t *TableRenderer) Render(w io.Writer, quotas []provider.Quota) error {
 	slog.Debug("table: rendering quota table", "rows", len(quotas))
 
-	tw := tabwriter.NewWriter(w, 1, 8, 2, ' ', tabwriter.StripEscape)
+	// Use a buffer to collect aligned rows without colors first.
+	// This ensures tabwriter calculates widths correctly.
+	var buf bytes.Buffer
+	tw := tabwriter.NewWriter(&buf, 1, 8, 2, ' ', 0)
 
 	// Header row.
 	if _, err := fmt.Fprintln(tw, "PROVIDER\tACCOUNT\tWINDOW\tSTATUS\tUSED\tLIMIT\tRESETS_AT\tRESETS_IN\tMESSAGE"); err != nil {
@@ -96,7 +100,7 @@ func (t *TableRenderer) Render(w io.Writer, quotas []provider.Quota) error {
 			}
 			resetsIn = fmt.Sprintf("%.1fh", hours)
 		}
-		
+
 		window := q.Name
 		if window == "" {
 			window = "-"
@@ -109,29 +113,7 @@ func (t *TableRenderer) Render(w io.Writer, quotas []provider.Quota) error {
 			"status", q.Status,
 		)
 
-		colorPrefix := ""
-		colorSuffix := ""
-		if q.Used != nil && q.Limit != nil && *q.Limit > 0 {
-			pct := (float64(*q.Used) / float64(*q.Limit)) * 100
-			switch {
-			case pct <= 50:
-				colorPrefix = "\xff\x1b[38;5;46m\xff" // Green
-			case pct <= 60:
-				colorPrefix = "\xff\x1b[38;5;154m\xff" // Yellow-Green
-			case pct <= 70:
-				colorPrefix = "\xff\x1b[38;5;226m\xff" // Yellow
-			case pct <= 80:
-				colorPrefix = "\xff\x1b[38;5;214m\xff" // Orange
-			case pct <= 90:
-				colorPrefix = "\xff\x1b[38;5;202m\xff" // Red-Orange
-			default:
-				colorPrefix = "\xff\x1b[38;5;196m\xff" // Red
-			}
-			colorSuffix = "\xff\x1b[0m\xff" // Reset
-		}
-
-		row := fmt.Sprintf("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s%s",
-			colorPrefix,
+		row := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s",
 			q.Account.Provider,
 			q.Account.Name,
 			window,
@@ -141,7 +123,6 @@ func (t *TableRenderer) Render(w io.Writer, quotas []provider.Quota) error {
 			resetsAt,
 			resetsIn,
 			q.Message,
-			colorSuffix,
 		)
 		if _, err := fmt.Fprintln(tw, row); err != nil {
 			return fmt.Errorf("table: write row for %s/%s: %w", q.Account.Provider, q.Account.Name, err)
@@ -150,6 +131,50 @@ func (t *TableRenderer) Render(w io.Writer, quotas []provider.Quota) error {
 
 	if err := tw.Flush(); err != nil {
 		return fmt.Errorf("table: flush: %w", err)
+	}
+
+	// Now read the aligned lines and apply colors.
+	output := buf.String()
+	if output == "" {
+		return nil
+	}
+	lines := strings.Split(strings.TrimSuffix(output, "\n"), "\n")
+
+	// Write header.
+	if _, err := fmt.Fprintln(w, lines[0]); err != nil {
+		return err
+	}
+
+	// Write data rows with colors.
+	for i, q := range quotas {
+		if i+1 >= len(lines) {
+			break
+		}
+
+		colorPrefix := ""
+		colorSuffix := ""
+		if q.Used != nil && q.Limit != nil && *q.Limit > 0 {
+			pct := (float64(*q.Used) / float64(*q.Limit)) * 100
+			switch {
+			case pct <= 50:
+				colorPrefix = "\x1b[38;5;46m" // Green
+			case pct <= 60:
+				colorPrefix = "\x1b[38;5;154m" // Yellow-Green
+			case pct <= 70:
+				colorPrefix = "\x1b[38;5;226m" // Yellow
+			case pct <= 80:
+				colorPrefix = "\x1b[38;5;214m" // Orange
+			case pct <= 90:
+				colorPrefix = "\x1b[38;5;202m" // Red-Orange
+			default:
+				colorPrefix = "\x1b[38;5;196m" // Red
+			}
+			colorSuffix = "\x1b[0m" // Reset
+		}
+
+		if _, err := fmt.Fprintf(w, "%s%s%s\n", colorPrefix, lines[i+1], colorSuffix); err != nil {
+			return err
+		}
 	}
 
 	slog.Debug("table: render complete")

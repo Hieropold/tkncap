@@ -16,6 +16,12 @@ Then build the project:
 go build -o tkncap .
 ```
 
+For a release build with optimizations (smaller binary size and trimmed paths):
+
+```bash
+go build -ldflags="-s -w" -trimpath -o tkncap .
+```
+
 To install it directly to your `$GOPATH/bin`:
 
 ```bash

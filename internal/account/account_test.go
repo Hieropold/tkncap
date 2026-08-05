@@ -72,6 +72,18 @@ func TestDiscover(t *testing.T) {
 			},
 		},
 		{
+			name: "single copilot account",
+			env: []string{
+				"TKNCAP_COPILOT_WORK_CREDENTIALS_PATH=/home/user/.copilot/config.json",
+			},
+			wantLen: 1,
+			wantAccs: []Account{
+				{Provider: ProviderCopilot, Name: "work", Fields: map[string]string{
+					"CREDENTIALS_PATH": "/home/user/.copilot/config.json",
+				}},
+			},
+		},
+		{
 			name: "unknown provider segment is skipped",
 			env: []string{
 				"TKNCAP_OPENAI_WORK_API_KEY=sk-fake",

@@ -2,7 +2,7 @@
 
 ## Overview
 
-`tkncap` is a CLI tool that reads token quota information for user accounts across multiple AI provider services: Claude Code and Gemini. Each service call is isolated behind a `Provider` interface so implementations can be added independently without changing the command layer.
+`tkncap` is a CLI tool that reads token quota information for user accounts across multiple AI provider services: Claude Code, Gemini, and GitHub Copilot. Each service call is isolated behind a `Provider` interface so implementations can be added independently without changing the command layer.
 
 ## Repository Layout
 
@@ -20,7 +20,8 @@ tkncap/
     ├── provider/
     │   ├── provider.go           # Provider interface, Quota type, registry
     │   ├── claude.go             # ClaudeProvider (stub)
-    │   └── gemini.go             # GeminiProvider (stub)
+    │   ├── gemini.go             # GeminiProvider (stub)
+    │   └── copilot.go            # CopilotProvider
     ├── logging/
     │   └── logging.go            # slog initialisation from TKNCAP_LOG_LEVEL
     └── output/
@@ -57,7 +58,7 @@ All accounts are configured via environment variables. No config file is used. T
 TKNCAP_<PROVIDER>_<ACCOUNT>_<FIELD>=<value>
 ```
 
-- **PROVIDER**: `CLAUDE` or `GEMINI` (case-sensitive uppercase).
+- **PROVIDER**: `CLAUDE`, `GEMINI`, or `COPILOT` (case-sensitive uppercase).
 - **ACCOUNT**: A user-chosen label (uppercase, single token with no underscores), e.g. `WORK`, `PERSONAL`, `MAIN`.
 - **FIELD**: A provider-specific key, e.g. `CREDENTIALS_PATH`, `API_KEY`, `TOKEN`.
 
@@ -67,7 +68,35 @@ Multiple accounts of the same provider are supported by using different ACCOUNT 
 TKNCAP_CLAUDE_WORK_CREDENTIALS_PATH=/home/user/.claude/.credentials.json
 TKNCAP_CLAUDE_PERSONAL_CREDENTIALS_PATH=/home/user/.claude-personal/.credentials.json
 TKNCAP_GEMINI_MAIN_API_KEY=AIzaFake
+TKNCAP_COPILOT_MAIN_CREDENTIALS_PATH=/home/user/.copilot/config.json
 ```
+
+### Copilot quota data source
+
+Unlike Claude and Gemini, GitHub has no documented per-user Copilot quota API. `CopilotProvider`
+resolves a `gho_` token from two sources, in order, and calls the undocumented
+`GET https://api.github.com/copilot_internal/user` endpoint with it, sending request headers that
+mimic the real Copilot CLI's own identity (`Authorization: token <gho_token>`, hardcoded
+`User-Agent: GitHubCopilotCLI/1.0.78`, `Copilot-Integration-Id: copilot-cli`). This is inherently
+fragile — see `docs/task-copilot-usage-limits.md` for the full rationale — but is the only
+available data source.
+
+**Token resolution order:**
+1. `CREDENTIALS_PATH` (optional) — the real Copilot CLI's `~/.copilot/config.json` (JSONC —
+   `//`-prefixed lines are stripped before parsing), read for a `copilotTokens` entry.
+2. `gh auth token` fallback — shelled out to when `CREDENTIALS_PATH` is unset, missing, or its file
+   has no usable token. Not every Copilot CLI install persists a plaintext token to config.json
+   (e.g. when auth is backed by an OS keyring instead), so this fallback is often the one that
+   actually supplies the token; it works as long as `gh auth login` has been run and the
+   authenticated account has Copilot access.
+
+If neither source yields a token, the account reports `StatusMisconfigured` (nothing usable
+configured and `gh` isn't even on `PATH`) or `StatusError` (a source was attempted but failed —
+e.g. `gh auth token` returned an error because you're not logged in).
+
+Three named rows are returned per account: `premium`, `completions`, and `chat`. Paid-plan accounts
+populate these from `quota_snapshots`; free/limited accounts fall back to `monthly_quotas` totals
+(`limited_user_quotas` holds *remaining*, not total, and is intentionally not used for `Limit`).
 
 ## Provider Interface
 

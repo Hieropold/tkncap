@@ -77,6 +77,7 @@ github.com/hieropold/tkncap
 |-------------|----------------------|-----------------------|----------------------------------------------------|
 | claude      | `ProviderClaude`      | `CREDENTIALS_PATH`    | `TKNCAP_CLAUDE_WORK_CREDENTIALS_PATH=~/.claude/...` |
 | gemini      | `ProviderGemini`      | `API_KEY`             | `TKNCAP_GEMINI_MAIN_API_KEY=AIza...`                |
+| copilot     | `ProviderCopilot`     | `CREDENTIALS_PATH` (optional; falls back to `gh auth token`) | `TKNCAP_COPILOT_MAIN_CREDENTIALS_PATH=~/.copilot/config.json` |
 
 ### Adding a New Provider
 

@@ -15,14 +15,16 @@ import (
 type Provider string
 
 const (
-	ProviderClaude      Provider = "claude"
-	ProviderGemini Provider = "gemini"
+	ProviderClaude  Provider = "claude"
+	ProviderGemini  Provider = "gemini"
+	ProviderCopilot Provider = "copilot"
 )
 
 // knownProviders maps the uppercase env-var segment to the canonical Provider value.
 var knownProviders = map[string]Provider{
-	"CLAUDE":      ProviderClaude,
-	"GEMINI": ProviderGemini,
+	"CLAUDE":  ProviderClaude,
+	"GEMINI":  ProviderGemini,
+	"COPILOT": ProviderCopilot,
 }
 
 // Account represents a single named account for a quota provider, derived

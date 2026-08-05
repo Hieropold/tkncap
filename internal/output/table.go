@@ -1,30 +1,8 @@
-/**
- * package output — TableRenderer
- *
- * <purpose-start>
- * Renders quota data as a human-readable table using text/tabwriter. Column
- * headers are printed on the first line; each Quota occupies one row. Rows are
- * color-coded from green to red based on the percentage of USED quota. Nil
- * pointer fields (Used, Limit, ResetsAt) are rendered as "-" to indicate the
- * value is unavailable. The table is written to the provided io.Writer and
- * flushed before returning. No external dependencies beyond the standard
- * library are used.
- * <purpose-end>
- *
- * <inputs-start>
- * - w io.Writer: destination for the rendered table (typically os.Stdout).
- * - quotas []provider.Quota: the quota records to render; may be empty.
- * <inputs-end>
- *
- * <outputs-start>
- * - error: non-nil if writing to w or flushing tabwriter fails.
- * <outputs-end>
- *
- * <side-effects-start>
- * - Writes to w.
- * - Logs each rendered row at debug level.
- * <side-effects-end>
- */
+// TableRenderer writes quota data as a color-coded, tab-aligned table (green
+// to red based on used/limit percentage) using only the standard library.
+// Rows are built in a buffer first so text/tabwriter can compute column
+// widths before ANSI color codes are applied, since the escape sequences
+// would otherwise throw off alignment.
 package output
 
 import (
@@ -42,31 +20,12 @@ import (
 // TableRenderer writes quota data as tab-aligned columns.
 type TableRenderer struct{}
 
-/**
- * Render
- *
- * <purpose-start>
- * Formats each Quota as a table row with columns: PROVIDER, ACCOUNT, WINDOW,
- * STATUS, USED, LIMIT, RESETS_AT, RESETS_IN, MESSAGE. Nil pointer fields 
- * become "-". Uses text/tabwriter to align columns in an intermediate buffer 
- * before applying ANSI color sequences to entire rows based on quota 
- * utilization. This ensures perfect alignment regardless of escape sequences.
- * <purpose-end>
- *
- * <inputs-start>
- * - w io.Writer: destination writer.
- * - quotas []provider.Quota: records to render.
- * <inputs-end>
- *
- * <outputs-start>
- * - error: write or flush error, nil on success.
- * <outputs-end>
- *
- * <side-effects-start>
- * - Writes formatted table to w.
- * - Logs row count at debug level.
- * <side-effects-end>
- */
+// Render formats each Quota as a row with columns PROVIDER, ACCOUNT, WINDOW,
+// STATUS, USED, LIMIT, RESETS_AT, RESETS_IN, MESSAGE (nil pointer fields
+// become "-"). See the package doc comment for why alignment is computed
+// before colors are applied.
+//
+// Side effects: writes to w.
 func (t *TableRenderer) Render(w io.Writer, quotas []provider.Quota) error {
 	slog.Debug("table: rendering quota table", "rows", len(quotas))
 

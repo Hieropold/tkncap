@@ -1,30 +1,7 @@
-/**
- * package provider — GeminiProvider
- *
- * <purpose-start>
- * Implementation of the Provider interface for Gemini API quota. Validates
- * that the account has an API_KEY, then makes a lightweight API call
- * (countTokens) to the Generative Language API to extract current rate limit
- * and usage metrics from the response headers.
- * <purpose-end>
- *
- * <inputs-start>
- * - account.Account with Provider == ProviderGemini and a Fields map that
- *   should contain "API_KEY".
- * <inputs-end>
- *
- * <outputs-start>
- * - Quota with Status=StatusMisconfigured if API_KEY is missing.
- * - Quota with Status=StatusError if the API call fails or no headers are found.
- * - Quota with Status=StatusOK containing Used/Limit for RPM, TPM, RPD based on headers.
- * <outputs-end>
- *
- * <side-effects-start>
- * - Makes an outbound HTTP POST request to generativelanguage.googleapis.com.
- * - Logs the fetch attempt and its outcome at debug level.
- * - Registers itself in the provider registry via init().
- * <side-effects-end>
- */
+// GeminiProvider implements Provider for Gemini API accounts. It sends a
+// lightweight countTokens request and reads rate-limit info out of the
+// response headers rather than a dedicated quota endpoint, since the
+// Generative Language API has no such endpoint.
 package provider
 
 import (
@@ -46,55 +23,20 @@ func init() {
 // GeminiProvider is the quota provider for Gemini accounts.
 type GeminiProvider struct{}
 
-/**
- * Kind
- *
- * <purpose-start>
- * Returns the provider kind so the registry can route Gemini accounts here.
- * <purpose-end>
- *
- * <inputs-start>
- * - None.
- * <inputs-end>
- *
- * <outputs-start>
- * - account.ProviderGemini.
- * <outputs-end>
- *
- * <side-effects-start>
- * - None.
- * <side-effects-end>
- */
+// Kind identifies this as the Gemini provider so the registry can route
+// Gemini accounts here.
 func (g *GeminiProvider) Kind() account.Provider {
 	return account.ProviderGemini
 }
 
-/**
- * Fetch
- *
- * <purpose-start>
- * Fetches the current usage quota for a Gemini account. Validates that API_KEY
- * is present, then sends a lightweight `countTokens` request to the Generative
- * Language API. The API returns rate limit information in headers such as
- * `x-ratelimit-limit-*` and `x-ratelimit-remaining-*`. These are parsed into
- * Quota results for requests per minute (RPM), tokens per minute (TPM), and
- * requests per day (RPD).
- * <purpose-end>
- *
- * <inputs-start>
- * - ctx context.Context: request context.
- * - a account.Account: the Gemini account whose quota is requested.
- * <inputs-end>
- *
- * <outputs-start>
- * - []Quota containing the fetch status, usage details, and any error message.
- * <outputs-end>
- *
- * <side-effects-start>
- * - Performs an HTTP POST request to https://generativelanguage.googleapis.com.
- * - Logs debugging information via slog.
- * <side-effects-end>
- */
+// Fetch retrieves the current requests-per-minute, tokens-per-minute, and
+// requests-per-day quota for a Gemini account. There is no dedicated quota
+// endpoint, so this sends a minimal countTokens request and parses the rate
+// limit info Google returns in x-ratelimit-*/x-goog-ratelimit-* response
+// headers.
+//
+// Side effects: makes an outbound HTTP POST request to
+// generativelanguage.googleapis.com.
 func (g *GeminiProvider) Fetch(ctx context.Context, a account.Account) []Quota {
 	slog.Debug("gemini: fetching quota", "account", a.Name)
 

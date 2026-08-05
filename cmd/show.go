@@ -1,36 +1,8 @@
-/**
- * package cmd — show command
- *
- * <purpose-start>
- * Implements the `tkncap show` subcommand, which is also the default action
- * when tkncap is invoked without any subcommand. The command:
- *   1. Discovers all configured accounts from os.Environ().
- *   2. If no accounts are found, prints a usage hint and exits 0.
- *   3. For each account, retrieves the registered Provider and calls Fetch.
- *   4. Selects the output renderer based on the --json flag.
- *   5. Renders all Quota records to os.Stdout.
- *
- * Provider implementations are registered via init() in their respective
- * files (claude.go, gemini.go). This file imports the
- * provider package with a blank import to trigger those init() calls.
- * <purpose-end>
- *
- * <inputs-start>
- * - os.Environ() for account discovery.
- * - JSONOutput global flag (from root.go) to select renderer.
- * <inputs-end>
- *
- * <outputs-start>
- * - Quota table or JSON array written to os.Stdout.
- * <outputs-end>
- *
- * <side-effects-start>
- * - Reads environment variables.
- * - Writes to os.Stdout.
- * - Logs progress at info/debug level.
- * - Exits with code 1 if rendering fails.
- * <side-effects-end>
- */
+// Package cmd (show.go) implements `tkncap show`, also the default action
+// when tkncap is invoked without a subcommand. Provider implementations
+// register themselves via init() in their own files (claude.go, gemini.go);
+// this file blank-imports the provider package to trigger those
+// registrations.
 package cmd
 
 import (
@@ -63,32 +35,11 @@ func init() {
 	rootCmd.RunE = runShow
 }
 
-/**
- * runShow
- *
- * <purpose-start>
- * Command body for `tkncap show`. Orchestrates account discovery, provider
- * dispatch, and output rendering. Returns an error only for rendering failures;
- * per-account errors are encoded in the Quota.Status field and rendered inline
- * so the user sees all results even when some accounts fail.
- * <purpose-end>
- *
- * <inputs-start>
- * - cmd *cobra.Command: the executing command (used for context).
- * - args []string: positional arguments (unused).
- * <inputs-end>
- *
- * <outputs-start>
- * - error: non-nil only if rendering fails.
- * <outputs-end>
- *
- * <side-effects-start>
- * - Reads os.Environ() for account discovery.
- * - Calls provider.Fetch for each account (network I/O in real implementations).
- * - Writes to os.Stdout.
- * - Logs progress at info and debug levels.
- * <side-effects-end>
- */
+// runShow is the command body for `tkncap show`, orchestrating account
+// discovery, provider dispatch, and output rendering. It returns an error
+// only for rendering failures; per-account fetch errors are instead encoded
+// in Quota.Status and rendered inline so the user sees all results even when
+// some accounts fail.
 func runShow(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 

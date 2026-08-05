@@ -1,27 +1,9 @@
-/**
- * package provider
- *
- * <purpose-start>
- * Defines the Provider interface that all quota-provider implementations must
- * satisfy, the Quota type that carries a single account's quota data, and a
- * package-level registry that maps account.Provider values to their Provider
- * implementations. Provider implementations register themselves via Register
- * in their package init() functions so that cmd/show.go can look them up
- * without importing each concrete package explicitly.
- * <purpose-end>
- *
- * <inputs-start>
- * - N/A (package definition).
- * <inputs-end>
- *
- * <outputs-start>
- * - N/A (package definition).
- * <outputs-end>
- *
- * <side-effects-start>
- * - The registry map is mutated by Register calls from init() functions.
- * <side-effects-end>
- */
+// Package provider defines the Provider interface and Quota type shared by
+// all quota-provider implementations, plus a registry mapping
+// account.Provider values to Provider implementations. Implementations
+// self-register via Register from their package init() functions so
+// cmd/show.go can look them up without importing each concrete package
+// explicitly.
 package provider
 
 import (
@@ -45,27 +27,9 @@ const (
 	StatusMisconfigured Status = "misconfigured"
 )
 
-/**
- * Quota
- *
- * <purpose-start>
- * Carries the result of a single quota fetch for one account. Pointer fields
- * (Used, Limit, ResetsAt) use nil to distinguish "not available" from zero.
- * The Message field provides human-readable detail for non-OK statuses.
- * <purpose-end>
- *
- * <inputs-start>
- * - N/A (struct definition).
- * <inputs-end>
- *
- * <outputs-start>
- * - N/A (struct definition).
- * <outputs-end>
- *
- * <side-effects-start>
- * - None.
- * <side-effects-end>
- */
+// Quota carries the result of a single quota fetch for one account. Pointer
+// fields (Used, Limit, ResetsAt) use nil to distinguish "not available" from
+// a genuine zero value.
 type Quota struct {
 	Account  account.Account
 	Name     string     // e.g. "5-hour" or "7-day" (optional, for multiple limits per account)
@@ -76,28 +40,9 @@ type Quota struct {
 	Message  string
 }
 
-/**
- * Provider
- *
- * <purpose-start>
- * Interface that each quota-provider implementation must satisfy. Kind returns
- * the provider type so the registry can route accounts to the correct
- * implementation. Fetch performs the quota lookup for a single account and
- * returns a slice of Quota (to support multiple limits like 5-hour and 7-day).
- * <purpose-end>
- *
- * <inputs-start>
- * - N/A (interface definition).
- * <inputs-end>
- *
- * <outputs-start>
- * - N/A (interface definition).
- * <outputs-end>
- *
- * <side-effects-start>
- * - None (interface contract; concrete implementations may have side effects).
- * <side-effects-end>
- */
+// Provider is the interface each quota-provider implementation must satisfy.
+// Fetch returns a slice rather than a single Quota to support providers that
+// expose multiple limits per account (e.g. 5-hour and 7-day windows).
 type Provider interface {
 	Kind() account.Provider
 	Fetch(ctx context.Context, a account.Account) []Quota
@@ -106,29 +51,12 @@ type Provider interface {
 // registry holds the mapping from account.Provider → Provider implementation.
 var registry = map[account.Provider]Provider{}
 
-/**
- * Register
- *
- * <purpose-start>
- * Adds a Provider implementation to the package-level registry. Intended to be
- * called from the init() function of each provider package (claude, gemini).
- * Panics if a provider for the same Kind is registered twice to
- * catch accidental double-registration at startup.
- * <purpose-end>
- *
- * <inputs-start>
- * - p Provider: the implementation to register.
- * <inputs-end>
- *
- * <outputs-start>
- * - None.
- * <outputs-end>
- *
- * <side-effects-start>
- * - Mutates the package-level registry map.
- * - Panics on duplicate registration.
- * <side-effects-end>
- */
+// Register adds a Provider implementation to the package-level registry.
+// Intended to be called from each provider package's init() (see claude.go,
+// gemini.go).
+//
+// Side effects: panics on duplicate registration for the same Kind, to catch
+// accidental double-registration at startup.
 func Register(p Provider) {
 	kind := p.Kind()
 	if _, exists := registry[kind]; exists {
@@ -137,27 +65,8 @@ func Register(p Provider) {
 	registry[kind] = p
 }
 
-/**
- * For
- *
- * <purpose-start>
- * Looks up the registered Provider for a given account.Provider kind. Returns
- * nil if no implementation has been registered for that kind, which callers
- * should treat as a configuration error.
- * <purpose-end>
- *
- * <inputs-start>
- * - kind account.Provider: the provider type to look up.
- * <inputs-end>
- *
- * <outputs-start>
- * - Provider: the registered implementation, or nil if not found.
- * <outputs-end>
- *
- * <side-effects-start>
- * - None.
- * <side-effects-end>
- */
+// For looks up the registered Provider for kind. Returns nil if none is
+// registered, which callers should treat as a configuration error.
 func For(kind account.Provider) Provider {
 	return registry[kind]
 }

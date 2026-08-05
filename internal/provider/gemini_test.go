@@ -1,22 +1,5 @@
-/**
- * package provider (tests)
- *
- * <purpose-start>
- * Basic tests for GeminiProvider. Covers Kind() and validation logic in Fetch.
- * <purpose-end>
- *
- * <inputs-start>
- * - N/A (test file).
- * <inputs-end>
- *
- * <outputs-start>
- * - Pass/fail results.
- * <outputs-end>
- *
- * <side-effects-start>
- * - None.
- * <side-effects-end>
- */
+// Package provider tests cover GeminiProvider: Kind() and the missing-API_KEY
+// validation path in Fetch.
 package provider
 
 import (

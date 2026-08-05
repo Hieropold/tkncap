@@ -1,33 +1,8 @@
-/**
- * package cmd — root command
- *
- * <purpose-start>
- * Defines the root cobra.Command for tkncap and exposes the Execute function
- * called by main.go. The root command sets up global persistent flags that are
- * inherited by all subcommands:
- *   --json        emit JSON instead of a table
- *   --log-level   override TKNCAP_LOG_LEVEL (debug|info|warn|error)
- *
- * The logging package is initialised in PersistentPreRunE so the level is
- * applied before any subcommand body runs. The --log-level flag, if set,
- * overrides the TKNCAP_LOG_LEVEL env-var by writing to the environment before
- * logging.Setup is called.
- * <purpose-end>
- *
- * <inputs-start>
- * - os.Args (implicit, parsed by cobra).
- * - TKNCAP_LOG_LEVEL environment variable (read by logging.Setup).
- * <inputs-end>
- *
- * <outputs-start>
- * - None directly; subcommands write to os.Stdout.
- * <outputs-end>
- *
- * <side-effects-start>
- * - Initialises the global slog logger via logging.Setup.
- * - Exits with code 1 on cobra Execute error.
- * <side-effects-end>
- */
+// Package cmd defines the root cobra.Command for tkncap and exposes Execute,
+// called by main.go. The --log-level flag, when set, overrides the
+// TKNCAP_LOG_LEVEL env-var by writing to the environment before
+// logging.Setup runs in PersistentPreRunE, so the level applies before any
+// subcommand body executes.
 package cmd
 
 import (
@@ -71,27 +46,9 @@ Example:
 	},
 }
 
-/**
- * Execute
- *
- * <purpose-start>
- * Entry point called by main.go. Runs the cobra command tree against os.Args
- * and exits with code 1 if the command returns an error. Cobra prints its own
- * usage/error messages, so Execute only needs to handle the exit code.
- * <purpose-end>
- *
- * <inputs-start>
- * - None (reads os.Args implicitly via cobra).
- * <inputs-end>
- *
- * <outputs-start>
- * - None.
- * <outputs-end>
- *
- * <side-effects-start>
- * - May call os.Exit(1) on error.
- * <side-effects-end>
- */
+// Execute runs the cobra command tree against os.Args and exits with code 1
+// if it returns an error. Cobra already prints its own usage/error messages,
+// so Execute only needs to translate a failure into the process exit code.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

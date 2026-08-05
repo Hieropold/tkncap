@@ -1,24 +1,6 @@
-/**
- * package account (tests)
- *
- * <purpose-start>
- * Table-driven tests for Discover. Covers: single account, multiple accounts
- * of the same provider, multiple providers, malformed variables (too few
- * segments, wrong prefix, unknown provider), and empty input.
- * <purpose-end>
- *
- * <inputs-start>
- * - N/A (test file, executed by `go test`).
- * <inputs-end>
- *
- * <outputs-start>
- * - Pass/fail test results via the testing package.
- * <outputs-end>
- *
- * <side-effects-start>
- * - None beyond test framework output.
- * <side-effects-end>
- */
+// Package account tests cover Discover: single account, multiple accounts of
+// the same provider, multiple providers, malformed variables (too few
+// segments, wrong prefix, unknown provider), and empty input.
 package account
 
 import (

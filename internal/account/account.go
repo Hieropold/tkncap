@@ -1,35 +1,9 @@
-/**
- * package account
- *
- * <purpose-start>
- * Defines the Account type that represents a single named user account for a
- * quota provider, and the Discover function that reads all TKNCAP_* environment
- * variables to build the list of configured accounts.
- *
- * The env-var convention is:
- *   TKNCAP_<PROVIDER>_<ACCOUNT>_<FIELD>=<value>
- * where PROVIDER ∈ {CLAUDE, GEMINI}, ACCOUNT is a user label
- * (single underscore-free token), and FIELD is a provider-specific key.
- *
- * Variables whose PROVIDER segment is not one of the known providers are
- * silently ignored. Malformed variables (fewer than three segments after
- * stripping the prefix) are also ignored.
- * <purpose-end>
- *
- * <inputs-start>
- * - env []string: slice of "KEY=VALUE" strings, typically os.Environ().
- * <inputs-end>
- *
- * <outputs-start>
- * - []Account: one Account per (provider, name) pair found in env.
- * - error: non-nil only if internal invariants are violated (currently unused,
- *   reserved for future validation).
- * <outputs-end>
- *
- * <side-effects-start>
- * - None. Pure function over the provided env slice.
- * <side-effects-end>
- */
+// Package account discovers configured provider accounts from environment
+// variables of the form TKNCAP_<PROVIDER>_<ACCOUNT>_<FIELD>=<value>, where
+// PROVIDER is one of the known providers (see knownProviders) and ACCOUNT is
+// a user-chosen label. This is the only supported configuration source —
+// there is no config file — so this convention must stay in sync with
+// docs/architecture.md and AGENTS.md whenever a provider is added.
 package account
 
 import (
@@ -51,28 +25,9 @@ var knownProviders = map[string]Provider{
 	"GEMINI": ProviderGemini,
 }
 
-/**
- * Account
- *
- * <purpose-start>
- * Represents a single named account for a quota provider. Each Account is
- * derived from one or more environment variables that share the same
- * TKNCAP_<PROVIDER>_<ACCOUNT>_ prefix. The Fields map holds the raw
- * key-value pairs discovered for that account (e.g. {"CREDENTIALS_PATH": "/home/..."}).
- * <purpose-end>
- *
- * <inputs-start>
- * - N/A (struct definition).
- * <inputs-end>
- *
- * <outputs-start>
- * - N/A (struct definition).
- * <outputs-end>
- *
- * <side-effects-start>
- * - None.
- * <side-effects-end>
- */
+// Account represents a single named account for a quota provider, derived
+// from the group of environment variables sharing one
+// TKNCAP_<PROVIDER>_<ACCOUNT>_ prefix.
 type Account struct {
 	// Provider is the quota service this account belongs to.
 	Provider Provider
@@ -88,30 +43,15 @@ type accountKey struct {
 	name     string // uppercase, e.g. "WORK"
 }
 
-/**
- * Discover
- *
- * <purpose-start>
- * Walks the provided env slice and extracts all accounts encoded as
- * TKNCAP_<PROVIDER>_<ACCOUNT>_<FIELD>=<value> variables. Variables that do
- * not match the prefix, have fewer than three segments after the prefix, or
- * reference an unknown provider are silently skipped. The returned slice is
- * stable: accounts appear in the order their first env-var was encountered.
- * <purpose-end>
- *
- * <inputs-start>
- * - env []string: "KEY=VALUE" pairs, typically os.Environ().
- * <inputs-end>
- *
- * <outputs-start>
- * - []Account: deduplicated accounts sorted by first-occurrence order.
- * - error: reserved for future validation; always nil in current implementation.
- * <outputs-end>
- *
- * <side-effects-start>
- * - Logs each parsed and skipped variable at debug level via slog.
- * <side-effects-end>
- */
+// Discover extracts all accounts encoded in env as
+// TKNCAP_<PROVIDER>_<ACCOUNT>_<FIELD>=<value> variables. Vars that don't
+// match the prefix, have fewer than three segments, or name an unknown
+// provider are silently skipped rather than erroring, so unrelated
+// environment variables never break account discovery. The returned slice
+// preserves first-occurrence order for stable output; the error return is
+// reserved for future validation and is currently always nil.
+//
+// Side effects: logs each parsed and skipped variable at debug level.
 func Discover(env []string) ([]Account, error) {
 	const prefix = "TKNCAP_"
 

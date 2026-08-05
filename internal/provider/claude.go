@@ -1,31 +1,6 @@
-/**
- * package provider — ClaudeProvider
- *
- * <purpose-start>
- * Implementation of the Provider interface for Claude Code quota. Uses the
- * credentials file specified in CREDENTIALS_PATH to authenticate with the
- * Anthropic API. It queries the undocumented OAuth usage endpoint to fetch
- * the current 5-hour rolling utilization limit.
- * <purpose-end>
- *
- * <inputs-start>
- * - account.Account with Provider == ProviderClaude and a Fields map that
- *   should contain "CREDENTIALS_PATH".
- * <inputs-end>
- *
- * <outputs-start>
- * - Quota with Status=StatusMisconfigured if CREDENTIALS_PATH is missing.
- * - Quota with Status=StatusError if file read, JSON decode, or API call fails.
- * - Quota with Status=StatusOK containing Used/Limit (as percentage) on success.
- * <outputs-end>
- *
- * <side-effects-start>
- * - Reads a local file specified by CREDENTIALS_PATH.
- * - Makes an outbound HTTP GET request to api.anthropic.com.
- * - Logs the fetch attempt and its outcome at debug level.
- * - Registers itself in the provider registry via init().
- * <side-effects-end>
- */
+// ClaudeProvider implements Provider for Claude Code accounts, authenticating
+// via the OAuth access token in the account's credentials file and querying
+// the undocumented Anthropic usage API for the 5-hour rolling utilization.
 package provider
 
 import (
@@ -47,25 +22,8 @@ func init() {
 // ClaudeProvider is the quota provider for Claude Code accounts.
 type ClaudeProvider struct{}
 
-/**
- * Kind
- *
- * <purpose-start>
- * Returns the provider kind so the registry can route Claude accounts here.
- * <purpose-end>
- *
- * <inputs-start>
- * - None.
- * <inputs-end>
- *
- * <outputs-start>
- * - account.ProviderClaude.
- * <outputs-end>
- *
- * <side-effects-start>
- * - None.
- * <side-effects-end>
- */
+// Kind identifies this as the Claude provider so the registry can route
+// Claude accounts here.
 func (c *ClaudeProvider) Kind() account.Provider {
 	return account.ProviderClaude
 }
@@ -94,31 +52,14 @@ type anthropicUsageResponse struct {
 	} `json:"extra_usage"`
 }
 
-/**
- * Fetch
- *
- * <purpose-start>
- * Fetches the 5-hour rolling usage quota for a Claude Code account. Validates
- * that CREDENTIALS_PATH is present, reads the credentials JSON file to extract
- * the OAuth access token, and queries the undocumented Anthropic usage API.
- * The utilization percentage is mapped to `Used` out of a `Limit` of 100.
- * <purpose-end>
- *
- * <inputs-start>
- * - ctx context.Context: request context.
- * - a account.Account: the Claude account whose quota is requested.
- * <inputs-end>
- *
- * <outputs-start>
- * - []Quota containing the fetch status, usage details, and any error message.
- * <outputs-end>
- *
- * <side-effects-start>
- * - Performs local file I/O to read credentials.
- * - Performs an HTTP GET request to https://api.anthropic.com.
- * - Logs debugging information via slog.
- * <side-effects-end>
- */
+// Fetch retrieves the 5-hour, 7-day, and (if enabled) extra-usage quota for a
+// Claude Code account by reading its OAuth access token from the
+// CREDENTIALS_PATH file and querying the undocumented Anthropic usage API.
+// The utilization percentage returned by the API is mapped to Used out of a
+// Limit of 100.
+//
+// Side effects: reads the local credentials file and makes an outbound HTTP
+// GET request to api.anthropic.com.
 func (c *ClaudeProvider) Fetch(ctx context.Context, a account.Account) []Quota {
 	slog.Debug("claude: fetching quota", "account", a.Name)
 
